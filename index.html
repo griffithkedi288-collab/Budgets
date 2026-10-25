@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Budget</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f7b5f">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#f4f6f5;--card:#fff;--tx:#14211c;--mu:#6b7a74;--ac:#0f7b5f;--ac2:#e3f3ee;--rd:#c0392b;--bd:#e2e8e5;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1512;--card:#17211d;--tx:#eaf2ee;--mu:#8ea199;--ac:#34c79c;--ac2:#18332b;--rd:#ff7b6b;--bd:#26342e}}
+:root[data-theme="dark"]{--bg:#0e1512;--card:#17211d;--tx:#eaf2ee;--mu:#8ea199;--ac:#34c79c;--ac2:#18332b;--rd:#ff7b6b;--bd:#26342e}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;max-width:520px;margin:0 auto;padding:16px 16px 40px}
+h1{font-size:15px;font-weight:600;color:var(--mu);margin:8px 0 4px}
+.total{font-size:36px;font-weight:700;letter-spacing:-1px}
+.sub{color:var(--mu);font-size:13px}
+.row{display:flex;gap:10px;margin:14px 0}
+.box{flex:1;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px}
+.box b{display:block;font-size:18px;margin-top:2px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 18px}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:13px;font-weight:600;background:var(--ac);color:#fff}
+button.alt{background:var(--ac2);color:var(--ac)}
+button.ghost{background:none;color:var(--mu);padding:4px 8px;font-weight:500}
+h2{font-size:15px;margin:18px 0 8px}
+.lock{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}.lock.on{display:flex}.lp{width:100%;max-width:320px;text-align:center}.lp input{text-align:center;font-size:22px;letter-spacing:6px;margin:12px 0}.foot{display:flex;flex-wrap:wrap;gap:6px;margin-top:26px;justify-content:center}
+.env{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:11px 13px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.env span:last-child{font-weight:700}
+.tx{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:14px}
+.tx small{display:block;color:var(--mu);font-size:12px}
+.pos{color:var(--ac)}.neg{color:var(--rd)}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.sheet.on{display:flex}
+.panel{background:var(--card);width:100%;max-width:520px;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+label{display:block;font-size:12px;color:var(--mu);margin:10px 0 4px}
+input,select{width:100%;font:inherit;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx)}
+.err{color:var(--rd);font-size:13px;min-height:18px;margin-top:6px}
+.btns{display:flex;gap:10px;margin-top:8px}.btns button{flex:1}
+</style></head><body>
+<div class="lock" id="lock"><div class="lp"><h2>🔒 Enter your PIN</h2><input id="pin" type="password" inputmode="numeric" maxlength="6" onkeydown="if(event.key==='Enter')unlock()"><div class="err" id="lerr"></div><button onclick="unlock()" style="width:100%">Open</button></div></div>
+<h1>Total money I have</h1>
+<div class="total" id="tot">UGX 0</div>
+<div class="row">
+<div class="box"><span class="sub">Not yet budgeted</span><b id="free">0</b></div>
+<div class="box"><span class="sub">Savings</span><b id="sav">0</b></div>
+</div>
+<div class="acts">
+<button onclick="openS('in')">+ Money received</button>
+<button onclick="openS('move')" class="alt">Budget it</button>
+<button onclick="openS('save')" class="alt">Save today</button>
+<button onclick="openS('spend')" class="alt">I spent</button>
+</div>
+<h2>My budgets</h2><div id="envs"></div>
+<button class="ghost" onclick="addEnv()">+ New budget category</button>
+<h2>History</h2><div id="hist"></div>
+
+<div class="foot"><button class="ghost" onclick="setPin()">🔒 Set / change PIN</button><button class="ghost" onclick="backup()">⬇ Backup</button><button class="ghost" onclick="restore()">⬆ Restore</button></div>
+<div class="sheet" id="sheet" onclick="if(event.target===this)closeS()"><div class="panel">
+<h2 id="st" style="margin-top:0"></h2>
+<div id="fFrom"><label id="lFrom">From</label><select id="from"></select></div>
+<div id="fTo"><label id="lTo">To</label><select id="to"></select></div>
+<label>Amount (UGX)</label><input id="amt" type="number" inputmode="numeric" min="0">
+<div id="fNote"><label id="lNote">Note</label><input id="note" type="text"></div>
+<div class="err" id="err"></div>
+<div class="btns"><button class="alt" onclick="closeS()">Cancel</button><button onclick="submit()">Save</button></div>
+</div></div>
+
+<script>
+var K="mybudget_v1",S;
+try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
+if(!S||!S.envs)S={envs:[{id:"e1",name:"Food"},{id:"e2",name:"Transport"},{id:"e3",name:"Airtime & Data"},{id:"e4",name:"Personal"},{id:"e5",name:"Other"}],tx:[]};
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function fmt(n){return Math.round(n).toLocaleString("en-US")}
+function ids(){return["free","sav"].concat(S.envs.map(function(e){return e.id}))}
+function name(id){if(id==="free")return"Not yet budgeted";if(id==="sav")return"Savings";var e=S.envs.filter(function(x){return x.id===id})[0];return e?e.name:"(deleted)"}
+function bal(id){var b=0;S.tx.forEach(function(t){if(t.to===id)b+=t.amt;if(t.from===id)b-=t.amt});return b}
+function render(){
+ var tot=0;ids().forEach(function(i){tot+=bal(i)});
+ document.getElementById("tot").textContent="UGX "+fmt(tot);
+ document.getElementById("free").textContent=fmt(bal("free"));
+ document.getElementById("sav").textContent=fmt(bal("sav"));
+ document.getElementById("envs").innerHTML=S.envs.map(function(e){var b=bal(e.id);return '<div class="env"><span>'+esc(e.name)+'</span><span class="'+(b<0?"neg":"")+'">'+fmt(b)+'</span></div>'}).join("")||'<div class="sub">No categories yet.</div>';
+ document.getElementById("hist").innerHTML=S.tx.slice().reverse().map(function(t){
+  var d=new Date(t.d).toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+  var l,c,sg;
+  if(t.t==="in"){l="Received"+(t.note?" · "+esc(t.note):"");c="pos";sg="+"}
+  else if(t.t==="spend"){l="Spent"+(t.note?" · "+esc(t.note):"")+"<small>from "+esc(name(t.from))+"</small>";c="neg";sg="−"}
+  else{l=(t.to==="sav"?"Saved":"Moved")+"<small>"+esc(name(t.from))+" → "+esc(name(t.to))+"</small>";c="";sg=""}
+  return '<div class="tx"><div>'+l+'<small>'+d+'</small></div><div style="text-align:right"><b class="'+c+'">'+sg+fmt(t.amt)+'</b><br><button class="ghost" onclick="del('+t.id+')">undo</button></div></div>'}).join("")||'<div class="sub">Nothing yet. Tap “Money received” to start.</div>';
+}
+var mode;
+function opts(sel,list,keep){var v=sel.value;sel.innerHTML=list.map(function(i){return '<option value="'+i+'">'+esc(name(i))+' ('+fmt(bal(i))+')</option>'}).join("");if(keep&&list.indexOf(v)>-1)sel.value=v}
+function openS(m){
+ mode=m;var all=ids(),envs=S.envs.map(function(e){return e.id});
+ var T={in:"Money received",move:"Budget money",save:"Save today",spend:"I spent money"};
+ document.getElementById("st").textContent=T[m];
+ var f=document.getElementById("from"),t=document.getElementById("to");
+ document.getElementById("fFrom").style.display=(m==="in")?"none":"block";
+ document.getElementById("fTo").style.display=(m==="move"||m==="save")?"block":"none";
+ document.getElementById("fNote").style.display=(m==="move")?"none":"block";
+ document.getElementById("lNote").textContent=m==="in"?"Who sent it? (optional)":m==="spend"?"What did you spend it on?":"Note (optional)";
+ if(m==="move"){opts(f,all);f.value="free";opts(t,envs.concat(["sav"]))}
+ if(m==="save"){opts(f,all.filter(function(i){return i!=="sav"}));f.value="free";opts(t,["sav"])}
+ if(m==="spend"){opts(f,all);document.getElementById("lFrom").textContent="Take it from"}
+ else document.getElementById("lFrom").textContent="Take it from";
+ document.getElementById("amt").value="";document.getElementById("note").value="";document.getElementById("err").textContent="";
+ document.getElementById("sheet").classList.add("on");
+ setTimeout(function(){document.getElementById("amt").focus()},100);
+}
+function closeS(){document.getElementById("sheet").classList.remove("on")}
+function submit(){
+ var a=Math.round(parseFloat(document.getElementById("amt").value)),e=document.getElementById("err");
+ if(!(a>0)){e.textContent="Enter an amount.";return}
+ var from=document.getElementById("from").value,to=document.getElementById("to").value,note=document.getElementById("note").value.trim();
+ var t={id:Date.now(),d:Date.now(),amt:a,note:note};
+ if(mode==="in"){t.t="in";t.to="free"}
+ else{
+  if(from===to){e.textContent="Pick two different places.";return}
+  if(a>bal(from)){e.textContent="Not enough in "+name(from)+" (only "+fmt(bal(from))+").";return}
+  t.from=from;
+  if(mode==="spend")t.t="spend";else{t.t="move";t.to=to}
+ }
+ S.tx.push(t);save();closeS();render();
+}
+function del(id){if(confirm("Undo this entry?")){S.tx=S.tx.filter(function(t){return t.id!==id});save();render()}}
+function addEnv(){var n=prompt("Name of the new budget category:");if(n&&n.trim()){S.envs.push({id:"e"+Date.now(),name:n.trim()});save();render()}}
+function hp(p){var h=5381;p="bud"+p;for(var i=0;i<p.length;i++)h=((h<<5)+h+p.charCodeAt(i))|0;return String(h)}
+function unlock(){var v=document.getElementById("pin").value;if(hp(v)===S.pin){document.getElementById("lock").classList.remove("on");document.getElementById("pin").value="";document.getElementById("lerr").textContent=""}else document.getElementById("lerr").textContent="Wrong PIN."}
+function setPin(){var p=prompt("Choose a PIN of 4 to 6 digits. Remember it: if you forget it you will be locked out. Leave empty to remove the PIN.");if(p===null)return;if(p===""){delete S.pin;save();alert("PIN removed.")}else if(/^\d{4,6}$/.test(p)){S.pin=hp(p);save();alert("PIN set. It will be asked each time you open the app.")}else alert("Use 4 to 6 digits only.")}
+function backup(){var j=JSON.stringify({envs:S.envs,tx:S.tx});try{navigator.clipboard.writeText(j).then(function(){alert("Backup copied. Paste it into WhatsApp (Saved messages) or Notes and keep it safe.")},function(){prompt("Copy this backup text and keep it safe:",j)})}catch(e){prompt("Copy this backup text and keep it safe:",j)}}
+function restore(){var j=prompt("Paste your backup text here:");if(!j)return;try{var o=JSON.parse(j);if(!o.envs||!o.tx)throw 1;if(!confirm("Replace everything in the app with this backup?"))return;S.envs=o.envs;S.tx=o.tx;save();render()}catch(e){alert("That backup text is not valid.")}}
+if(S.pin)document.getElementById("lock").classList.add("on");
+render();
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(function(){})}
+</script></body></html>
