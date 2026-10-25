@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Budget</title>
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#1f4a37"><link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#f1f3ee;--card:#fbfbf8;--tx:#1b2a22;--mu:#6e7b72;--ac:#2f5d46;--ac2:#e3ebe5;--rd:#a8473b;--bd:#dfe4dc;--gd:#b8995a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1612;--card:#17201b;--tx:#e6ede8;--mu:#8a9a90;--ac:#4a8567;--ac2:#1d2e25;--rd:#d98577;--bd:#25322a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;max-width:520px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(90px + env(safe-area-inset-bottom,0px))}
+h1{font-size:13px;font-weight:600;color:var(--mu);margin:6px 0 2px}h2{font-size:15px;margin:18px 0 8px}
+.total{font-size:34px;font-weight:700;letter-spacing:-1px}.sub{color:var(--mu);font-size:12px}
+.cu{font-size:10px;font-weight:600;color:var(--mu);margin-right:3px;letter-spacing:.3px}
+.row{display:flex;gap:10px;margin:12px 0}.box{flex:1;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:11px;min-width:0}.box b{display:block;font-size:17px;margin-top:2px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:13px;font-weight:600;background:var(--ac);color:#fff}
+button.alt{background:var(--ac2);color:var(--ac)}button.alt.warn{color:var(--rd)}button.ghost{background:none;color:var(--mu);padding:4px 8px;font-weight:500;font-size:13px}
+.env{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:11px 13px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.env b{white-space:nowrap}.pr{height:7px;background:var(--ac2);border-radius:9px;overflow:hidden;margin-top:7px}.pr i{display:block;height:100%;background:var(--ac);border-radius:9px}
+.bl{display:flex;justify-content:space-between;font-size:13px;margin-top:9px}.bt{height:6px;background:var(--ac2);border-radius:9px;overflow:hidden;margin-top:4px}.bt i{display:block;height:100%;background:var(--gd)}
+.tx{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:14px}.tx small{display:block;color:var(--mu);font-size:12px}
+.mh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:16px;padding-bottom:6px;border-bottom:2px solid var(--bd);font-size:14px}.mh span{color:var(--mu);font-size:12px}
+.mn{display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px}.mn b{font-size:15px}.mn button{font-size:22px;line-height:1;padding:2px 16px}
+.pos{color:var(--ac)}.neg{color:var(--rd)}.v{display:none}.v.on{display:block}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--bd);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:10}
+nav div{display:flex;width:100%;max-width:520px}nav button{flex:1;background:none;color:var(--mu);border-radius:0;font-size:12px;padding:10px 4px}nav button.on{color:var(--ac)}nav span{display:block;font-size:19px}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}.sheet.on{display:flex}
+.panel{background:var(--card);width:100%;max-width:520px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+label{display:block;font-size:12px;color:var(--mu);margin:10px 0 4px}input,select{width:100%;font:inherit;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx)}
+.err{color:var(--rd);font-size:13px;min-height:18px;margin-top:6px}.btns{display:flex;gap:10px;margin-top:8px}.btns button{flex:1}
+.lock{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}.lock.on{display:flex}.lp{width:100%;max-width:320px;text-align:center}.lp input{text-align:center;font-size:22px;letter-spacing:6px;margin:12px 0}
+.foot{display:flex;flex-wrap:wrap;gap:6px;margin-top:22px;justify-content:center}
+</style></head><body>
+<div class="lock" id="lock"><div class="lp"><h2>🔒 Enter your PIN</h2><input id="pin" type="password" inputmode="numeric" maxlength="6" onkeydown="if(event.key==='Enter')unlock()"><div class="err" id="lerr"></div><button onclick="unlock()" style="width:100%">Open</button></div></div>
+
+<div class="v on" id="v-home">
+<h1>Total money I have</h1><div class="total" id="tot"></div>
+<div class="row"><div class="box"><span class="sub">Not yet budgeted</span><b id="free"></b></div><div class="box"><span class="sub">Savings</span><b id="sav"></b></div></div>
+<div class="env" id="dcard" style="display:none;border-color:var(--rd)"><div><div class="sub">You owe your savings</div><b class="neg" id="dtot" style="font-size:17px"></b></div><button class="alt" style="padding:10px 18px" onclick="openS('repay')">Repay</button></div>
+<div class="acts"><button onclick="openS('in')">+ Money received</button><button class="alt" onclick="auto()">⚡ Auto-budget</button><button class="alt" onclick="openS('move',{to:'sav'})">Save today</button><button class="alt" onclick="openS('spend')">I spent</button><button class="alt warn" style="grid-column:1/-1" onclick="openS('emerg')">🚨 Emergency (use savings)</button></div>
+<div class="mn"><button class="ghost" onclick="shiftM(-1)">‹</button><b class="mlab"></b><button class="ghost mnext" onclick="shiftM(1)">›</button></div>
+<div class="row" style="margin-top:0"><div class="box"><span class="sub">Received</span><b id="mi"></b></div><div class="box"><span class="sub">Spent</span><b id="ms" class="neg"></b></div><div class="box"><span class="sub">Saved</span><b id="mv" class="pos"></b></div></div>
+<h2>Where my money went</h2><div id="bars"></div>
+</div>
+
+<div class="v" id="v-bud"><h2 style="margin-top:6px">My budgets</h2><div class="sub">Set how much you plan for each budget every month (in UGX). Tap a budget to rename it or change its amount. Auto-budget fills each budget up to its plan using the money in "Not yet budgeted".</div>
+<div class="mn"><button class="ghost" onclick="shiftM(-1)">‹</button><b class="mlab"></b><button class="ghost mnext" onclick="shiftM(1)">›</button></div>
+<div id="envs" style="margin-top:10px"></div><button class="alt" style="width:100%" onclick="openS('edit',{k:'e'})">+ New budget</button></div>
+
+<div class="v" id="v-goal"><h2 style="margin-top:6px">Savings</h2>
+<div class="row" style="margin-top:0"><div class="box"><span class="sub">In savings now</span><b id="sav2"></b></div><div class="box"><span class="sub">Owed back to savings</span><b id="dtot2" class="neg"></b></div></div>
+<div class="acts"><button class="alt" onclick="openS('move',{to:'sav'})">Save today</button><button class="alt warn" onclick="openS('emerg')">🚨 Emergency use</button></div>
+<h2>Emergency debts</h2><div class="sub" style="margin-bottom:8px">Money you take from savings in an emergency is listed here as a debt until you pay it back.</div><div id="debts"></div>
+<h2>Savings goals</h2><div id="goals"></div><button class="alt" style="width:100%" onclick="openS('edit',{k:'g'})">+ New goal</button></div>
+
+<div class="v" id="v-hist"><h2 style="margin-top:6px">History</h2><div class="row" style="margin-top:0"><input id="q" placeholder="Search…" oninput="renderH()"><select id="mo" onchange="renderH()" style="max-width:150px"></select></div><div id="hist"></div>
+<div class="foot"><button class="ghost" onclick="setPin()">🔒 PIN</button><button class="ghost" onclick="backup()">⬇ Backup</button><button class="ghost" onclick="restore()">⬆ Restore</button></div></div>
+
+<nav><div><button id="n-home" class="on" onclick="show('home')"><span>🏠</span>Home</button><button id="n-bud" onclick="show('bud')"><span>👛</span>Budgets</button><button id="n-goal" onclick="show('goal')"><span>💰</span>Savings</button><button id="n-hist" onclick="show('hist')"><span>🕘</span>History</button></div></nav>
+
+<div class="sheet" id="sheet" onclick="if(event.target===this)closeS()"><div class="panel">
+<h2 id="st" style="margin-top:0"></h2>
+<div id="fDebt"><label>Which debt are you repaying?</label><select id="debt" onchange="debtPick()"></select></div>
+<div id="fFrom"><label id="lFrom">Take it from</label><select id="from"></select></div>
+<div id="fTo"><label>Put it in</label><select id="to"></select></div>
+<div id="fAmt"><label id="lAmt">Amount (UGX)</label><input id="amt" type="text" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="0" oninput="cm(this)"></div>
+<div id="fNote"><label id="lNote">Note</label><input id="note" type="text"></div>
+<div class="err" id="err"></div>
+<div class="btns"><button class="alt" onclick="closeS()">Cancel</button><button onclick="submit()">Save</button></div>
+<button class="ghost" id="del" style="width:100%;margin-top:6px;color:var(--rd)" onclick="delEnv()">Delete this</button>
+</div></div>
+
+<script>
+var K="mybudget_v1",S,u=Date.now(),mode,pre={},n0=new Date(),VM={y:n0.getFullYear(),m:n0.getMonth()};
+try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
+if(!S||!S.envs)S={envs:[{id:"e1",name:"Food",a:0},{id:"e2",name:"Transport",a:0},{id:"e3",name:"Airtime & Data",a:0},{id:"e4",name:"Personal",a:0},{id:"e5",name:"Other",a:0}],tx:[]};
+if(!S.tx)S.tx=[];
+var $=function(i){return document.getElementById(i)},nid=function(){return u++};
+/* Old versions stored a plan % per budget. Convert it once to an amount, using the latest month's income. */
+function mig(){var inc=0,lk=null;
+ S.tx.forEach(function(t){if(t.t==="in"){var d=new Date(t.d),k=d.getFullYear()*12+d.getMonth();if(lk===null||k>lk){lk=k;inc=0}if(k===lk)inc+=t.amt}});
+ S.envs.forEach(function(e){if(!e.g&&e.a===undefined){e.a=(e.p&&inc)?Math.round(e.p/100*inc/1000)*1000:0;delete e.p}})}
+mig();
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function fmt(n){return Math.round(n).toLocaleString("en-US")}
+function U(n){return '<span class="cu">UGX</span>'+fmt(n)}
+function cm(el){var d=el.value.replace(/[^\d]/g,"");el.value=d?Number(d).toLocaleString("en-US"):""}
+function num(s){return parseInt(String(s).replace(/[^\d]/g,""),10)}
+function mname(y,m){return new Date(y,m,1).toLocaleDateString("en-GB",{month:"long",year:"numeric"})}
+function ids(){return["free","sav"].concat(S.envs.map(function(e){return e.id}))}
+function find(id){return S.envs.filter(function(x){return x.id===id})[0]}
+function name(id){if(id==="free")return"Not yet budgeted";if(id==="sav")return"Savings";var e=find(id);return e?(e.g?"🎯 ":"")+e.name:"(deleted)"}
+function isG(id){var e=find(id);return!!(e&&e.g)}
+function bal(id){var b=0;S.tx.forEach(function(t){if(t.to===id)b+=t.amt;if(t.from===id)b-=t.amt});return b}
+function inM(t,y,m){var d=new Date(t.d);return d.getFullYear()===y&&d.getMonth()===m}
+function owed(t){var p=0;S.tx.forEach(function(x){if(x.t==="repay"&&x.ref===t.id)p+=x.amt});return{paid:p,left:t.amt-p}}
+function debts(){return S.tx.filter(function(t){return t.t==="emerg"&&owed(t).left>0})}
+function debtTotal(){var s=0;debts().forEach(function(t){s+=owed(t).left});return s}
+function dbt(id){return S.tx.filter(function(x){return x.t==="emerg"&&String(x.id)===String(id)})[0]}
+function show(t){["home","bud","goal","hist"].forEach(function(x){$("v-"+x).classList.toggle("on",x===t);$("n-"+x).classList.toggle("on",x===t)});window.scrollTo(0,0)}
+function shiftM(d){var n=new Date(),c=VM.y*12+VM.m+d;if(c>n.getFullYear()*12+n.getMonth())return;var y=Math.floor(c/12);VM={y:y,m:c-y*12};render()}
+function render(){
+ var y=VM.y,m=VM.m,tot=0,I=0,P=0,V=0,by={},cur=mname(y,m),sh=new Date(y,m,1).toLocaleDateString("en-GB",{month:"short",year:"numeric"}),n=new Date(),isNow=(y===n.getFullYear()&&m===n.getMonth());
+ ids().forEach(function(i){tot+=bal(i)});
+ S.tx.forEach(function(t){if(!inM(t,y,m))return;
+  if(t.t==="in")I+=t.amt;
+  else if(t.t==="spend"){P+=t.amt;var k=name(t.from);by[k]=(by[k]||0)+t.amt}
+  else if(t.t==="emerg"){P+=t.amt;by["🚨 Emergency"]=(by["🚨 Emergency"]||0)+t.amt}
+  else if(t.t==="move"&&(t.to==="sav"||isG(t.to))&&!(t.from==="sav"||isG(t.from)))V+=t.amt});
+ $("tot").textContent="UGX "+fmt(tot);$("free").innerHTML=U(bal("free"));$("sav").innerHTML=U(bal("sav"));
+ Array.prototype.forEach.call(document.querySelectorAll(".mlab"),function(el){el.textContent=cur});
+ Array.prototype.forEach.call(document.querySelectorAll(".mnext"),function(el){el.style.opacity=isNow?".25":"1"});
+ $("mi").innerHTML=U(I);$("ms").innerHTML=U(P);$("mv").innerHTML=U(V);
+ var dt=debtTotal();$("dcard").style.display=dt>0?"flex":"none";$("dtot").innerHTML=U(dt);$("dtot2").innerHTML=U(dt);$("sav2").innerHTML=U(bal("sav"));
+ var ks=Object.keys(by).sort(function(a,b){return by[b]-by[a]}),mx=by[ks[0]]||1;
+ $("bars").innerHTML=ks.map(function(k){return '<div class="bl"><span>'+esc(k)+'</span><b>'+U(by[k])+'</b></div><div class="bt"><i style="width:'+Math.round(by[k]/mx*100)+'%"></i></div>'}).join("")||'<div class="sub">No spending in '+cur+'.</div>';
+ $("envs").innerHTML=S.envs.filter(function(e){return!e.g}).map(function(e){var b=bal(e.id),sp=0,fd=0;S.tx.forEach(function(t){if(!inM(t,y,m))return;if(t.t==="spend"&&t.from===e.id)sp+=t.amt;if(t.t==="move"&&t.to===e.id)fd+=t.amt});
+  return '<div class="env" onclick="openS(\'edit\',{eid:\''+e.id+'\'})"><div><div>'+esc(e.name)+'</div><div class="sub">Plan '+U(e.a||0)+' / month</div><div class="sub">'+sh+': added '+U(fd)+' · spent '+U(sp)+'</div></div><b class="'+(b<0?"neg":"")+'">'+U(b)+'</b></div>'}).join("")||'<div class="sub">No budgets yet.</div>';
+ $("debts").innerHTML=debts().map(function(t){var o=owed(t),p=Math.round(o.paid/t.amt*100),ds=new Date(t.d).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+  return '<div class="env" style="display:block;border-color:var(--rd)"><div style="display:flex;justify-content:space-between;gap:8px"><span>🚨 '+esc(t.note||"Emergency")+'</span><b class="neg">'+U(o.left)+'</b></div><div class="pr"><i style="width:'+p+'%"></i></div><div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:6px"><span class="sub">'+ds+' · from '+esc(name(t.from))+' · repaid '+U(o.paid)+' of '+U(t.amt)+'</span><button class="ghost" onclick="openS(\'repay\',{debt:'+t.id+'})">Repay</button></div></div>'}).join("")||'<div class="sub" style="margin-bottom:10px">No emergency debts. If you ever have to use savings in an emergency, tap the red Emergency button and it will be tracked here.</div>';
+ $("goals").innerHTML=S.envs.filter(function(e){return e.g}).map(function(e){var b=bal(e.id),p=Math.max(0,Math.min(100,Math.round(b/e.g*100)));
+  return '<div class="env" style="display:block"><div style="display:flex;justify-content:space-between" onclick="openS(\'edit\',{eid:\''+e.id+'\'})"><span>🎯 '+esc(e.name)+'</span><b>'+p+'%</b></div><div class="pr"><i style="width:'+p+'%"></i></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span class="sub">'+U(b)+' of '+U(e.g)+'</span><button class="ghost" onclick="openS(\'move\',{to:\''+e.id+'\'})">+ Add money</button></div></div>'}).join("")||'<div class="sub" style="margin-bottom:10px">Save for something big, like a phone or school fees. Add a goal with a target and watch the bar fill.</div>';
+ var o='<option value="">All months</option>',seen={};S.tx.slice().reverse().forEach(function(t){var d=new Date(t.d),k=d.getFullYear()+"-"+d.getMonth();if(!seen[k]){seen[k]=1;o+='<option value="'+k+'">'+d.toLocaleDateString("en-GB",{month:"short",year:"numeric"})+'</option>'}});
+ var cv=$("mo").value;$("mo").innerHTML=o;$("mo").value=cv;renderH();
+}
+function renderH(){
+ var q=$("q").value.toLowerCase(),mo=$("mo").value,last=null,tt={},h="";
+ S.tx.forEach(function(t){var d=new Date(t.d),k=d.getFullYear()+"-"+d.getMonth();tt[k]=tt[k]||{i:0,s:0};if(t.t==="in")tt[k].i+=t.amt;else if(t.t==="spend"||t.t==="emerg")tt[k].s+=t.amt});
+ S.tx.slice().reverse().forEach(function(t){
+  var d=new Date(t.d),k=d.getFullYear()+"-"+d.getMonth();
+  if(mo&&k!==mo)return;
+  var s=((t.note||"")+" "+(t.from?name(t.from):"")+" "+(t.to?name(t.to):"")).toLowerCase();
+  if(q&&s.indexOf(q)<0)return;
+  if(k!==last){last=k;h+='<div class="mh"><b>'+mname(d.getFullYear(),d.getMonth())+'</b><span>In '+U(tt[k].i)+' · Out '+U(tt[k].s)+'</span></div>'}
+  var day=d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}),nt=t.note?" · "+esc(t.note):"",l,c="",sg="";
+  if(t.t==="in"){l="Received"+nt;c="pos";sg="+"}
+  else if(t.t==="spend"){l="Spent"+nt+"<small>from "+esc(name(t.from))+"</small>";c="neg";sg="−"}
+  else if(t.t==="emerg"){var o=owed(t);l="🚨 Emergency"+nt+"<small>from "+esc(name(t.from))+" · "+(o.left>0?"still owed "+U(o.left):"fully repaid")+"</small>";c="neg";sg="−"}
+  else if(t.t==="repay"){l="Repaid"+nt+"<small>"+esc(name(t.from))+" → "+esc(name(t.to))+"</small>"}
+  else l=(t.to==="sav"?"Saved":"Moved")+nt+"<small>"+esc(name(t.from))+" → "+esc(name(t.to))+"</small>";
+  h+='<div class="tx"><div>'+l+'<small>'+day+'</small></div><div style="text-align:right"><b class="'+c+'">'+sg+U(t.amt)+'</b><br><button class="ghost" onclick="del('+t.id+')">undo</button></div></div>'});
+ $("hist").innerHTML=h||'<div class="sub">Nothing here yet.</div>';
+}
+function opts(sel,list){sel.innerHTML=list.map(function(i){return '<option value="'+i+'">'+esc(name(i))+' (UGX '+fmt(bal(i))+')</option>'}).join("")}
+function debtPick(){var t=dbt($("debt").value);if(!t)return;opts($("from"),ids().filter(function(i){return i!==t.from}));$("from").value="free";$("amt").value=fmt(owed(t).left)}
+function openS(m,p){
+ mode=m;pre=p||{};
+ if(m==="repay"&&!debts().length){alert("You don't owe your savings anything.");return}
+ var T={in:"Money received",move:pre.to==="sav"?"Save today":"Move money",spend:"I spent money",emerg:"🚨 Emergency use of savings",repay:"Repay savings",edit:"Budget"};
+ var e=pre.eid?find(pre.eid):null,g=e?!!e.g:pre.k==="g";
+ $("st").textContent=m==="edit"?(e?"Edit ":"New ")+(g?"goal":"budget"):T[m];
+ $("fDebt").style.display=m==="repay"?"block":"none";
+ $("fFrom").style.display=(m==="move"||m==="spend"||m==="emerg"||m==="repay")?"block":"none";
+ $("fTo").style.display=m==="move"?"block":"none";
+ $("fNote").style.display=(m==="move"||m==="repay")?"none":"block";
+ $("del").style.display=e?"block":"none";
+ $("lFrom").textContent=m==="emerg"?"Take it from (savings or a goal)":m==="repay"?"Pay it from":"Take it from";
+ $("lNote").textContent=m==="in"?"Who sent it? (optional)":m==="spend"?"What did you spend it on?":m==="emerg"?"What was the emergency?":"Name";
+ $("lAmt").textContent=m==="edit"?(g?"Target (UGX)":"Monthly plan (UGX)"):"Amount (UGX)";
+ $("amt").value=e?(g?fmt(e.g):(e.a?fmt(e.a):"")):"";$("note").value=e?e.name:"";$("err").textContent="";
+ if(m==="move"){opts($("from"),ids());$("from").value="free";opts($("to"),ids());$("to").value=pre.to||"sav"}
+ if(m==="spend")opts($("from"),["free"].concat(S.envs.filter(function(x){return!x.g}).map(function(x){return x.id})));
+ if(m==="emerg")opts($("from"),["sav"].concat(S.envs.filter(function(x){return x.g}).map(function(x){return x.id})));
+ if(m==="repay"){$("debt").innerHTML=debts().map(function(t){return '<option value="'+t.id+'">'+esc(t.note||"Emergency")+' (owes UGX '+fmt(owed(t).left)+')</option>'}).join("");if(pre.debt)$("debt").value=String(pre.debt);debtPick()}
+ $("sheet").classList.add("on");setTimeout(function(){$("amt").focus()},100);
+}
+function closeS(){$("sheet").classList.remove("on")}
+function submit(){
+ var a=num($("amt").value),er=$("err"),note=$("note").value.trim(),from=$("from").value,to=$("to").value;
+ if(mode==="edit"){
+  var e=pre.eid?find(pre.eid):null,g=e?!!e.g:pre.k==="g";if(!note){er.textContent="Enter a name.";return}
+  if(g&&!(a>0)){er.textContent="Enter a target amount.";return}
+  if(!g)a=a||0;
+  if(e){e.name=note;if(g)e.g=a;else e.a=a}else S.envs.push(g?{id:"e"+nid(),name:note,g:a}:{id:"e"+nid(),name:note,a:a});
+  save();closeS();render();return}
+ if(!(a>0)){er.textContent="Enter an amount.";return}
+ if(mode==="repay"){var dt=dbt($("debt").value);if(!dt){er.textContent="Pick a debt.";return}
+  var o=owed(dt);if(a>o.left){er.textContent="That is more than you owe (UGX "+fmt(o.left)+").";return}
+  if(a>bal(from)){er.textContent="Not enough in "+name(from)+" (only UGX "+fmt(bal(from))+").";return}
+  S.tx.push({id:nid(),d:Date.now(),t:"repay",from:from,to:dt.from,amt:a,ref:dt.id,note:dt.note||""});save();closeS();render();return}
+ var t={id:nid(),d:Date.now(),amt:a,note:note};
+ if(mode==="in"){t.t="in";t.to="free"}
+ else{if(mode==="move"&&from===to){er.textContent="Pick two different places.";return}
+  if(a>bal(from)){er.textContent="Not enough in "+name(from)+" (only UGX "+fmt(bal(from))+").";return}
+  t.from=from;if(mode==="spend")t.t="spend";else if(mode==="emerg")t.t="emerg";else{t.t="move";t.to=to}}
+ S.tx.push(t);save();closeS();render();
+}
+function delEnv(){var e=find(pre.eid);if(!e)return;
+ if(debts().some(function(t){return t.from===e.id})){$("err").textContent="Repay the emergency debt taken from this first.";return}
+ if(Math.round(bal(e.id))!==0){$("err").textContent="Move the money out first (balance is UGX "+fmt(bal(e.id))+").";return}
+ if(confirm("Delete "+e.name+"?")){S.envs=S.envs.filter(function(x){return x.id!==e.id});save();closeS();render()}}
+/* Auto-budget: fill each budget up to its monthly plan (this month), from "Not yet budgeted". If money is short, share it in proportion to what each still needs. */
+function auto(){var f=bal("free"),n=new Date(),y=n.getFullYear(),m=n.getMonth(),L=S.envs.filter(function(e){return!e.g&&e.a>0});
+ if(f<=0||!L.length){alert("Add money first, and set a monthly plan amount on your budgets (Budgets tab).");return}
+ var need=[],tn=0;L.forEach(function(e){var got=0;S.tx.forEach(function(t){if(t.t==="move"&&t.to===e.id&&inM(t,y,m))got+=t.amt});var r=e.a-got;if(r>0){need.push({e:e,n:r});tn+=r}});
+ if(!need.length){alert("All your budgets are already filled for "+mname(y,m)+".");return}
+ var short=f<tn,gv=need.map(function(x){return{e:x.e,a:short?Math.floor(f*x.n/tn):x.n}}).filter(function(x){return x.a>0});
+ if(!gv.length)return;
+ if(!confirm((short?"You have UGX "+fmt(f)+", but your budgets need UGX "+fmt(tn)+" this month. Share it like this?\n\n":"Fill your budgets for "+mname(y,m)+" like this?\n\n")+gv.map(function(x){return x.e.name+": UGX "+fmt(x.a)}).join("\n")))return;
+ gv.forEach(function(x){S.tx.push({id:nid(),d:Date.now(),t:"move",from:"free",to:x.e.id,amt:x.a,note:"auto"})});save();render()}
+function del(id){var t=S.tx.filter(function(x){return x.id===id})[0];
+ if(t&&t.t==="emerg"&&S.tx.some(function(x){return x.t==="repay"&&x.ref===id})){alert("Undo the repayments for this emergency first.");return}
+ if(confirm("Undo this entry?")){S.tx=S.tx.filter(function(x){return x.id!==id});save();render()}}
+function hp(p){var h=5381;p="bud"+p;for(var i=0;i<p.length;i++)h=((h<<5)+h+p.charCodeAt(i))|0;return String(h)}
+function unlock(){if(hp($("pin").value)===S.pin){$("lock").classList.remove("on");$("pin").value="";$("lerr").textContent=""}else $("lerr").textContent="Wrong PIN."}
+function setPin(){var p=prompt("Choose a PIN of 4 to 6 digits. Remember it: if you forget it you will be locked out. Leave empty to remove the PIN.");if(p===null)return;if(p===""){delete S.pin;save();alert("PIN removed.")}else if(/^\d{4,6}$/.test(p)){S.pin=hp(p);save();alert("PIN set.")}else alert("Use 4 to 6 digits only.")}
+function backup(){var j=JSON.stringify({envs:S.envs,tx:S.tx});try{navigator.clipboard.writeText(j).then(function(){alert("Backup copied. Paste it into Notes or WhatsApp (message yourself) and keep it safe.")},function(){prompt("Copy this backup text:",j)})}catch(e){prompt("Copy this backup text:",j)}}
+function restore(){var j=prompt("Paste your backup text here:");if(!j)return;try{var o=JSON.parse(j);if(!o.envs||!o.tx)throw 1;if(!confirm("Replace everything with this backup?"))return;S.envs=o.envs;S.tx=o.tx;mig();save();render()}catch(e){alert("That backup text is not valid.")}}
+if(S.pin)$("lock").classList.add("on");
+save();render();
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(function(){})}
+</script></body></html>
