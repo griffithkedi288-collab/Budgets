@@ -9,7 +9,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;max-width:520px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(90px + env(safe-area-inset-bottom,0px))}
 h1{font-size:13px;font-weight:600;color:var(--mu);margin:6px 0 2px}h2{font-size:15px;margin:18px 0 8px}
 .total{font-size:34px;font-weight:700;letter-spacing:-1px}.sub{color:var(--mu);font-size:12px}
-.row{display:flex;gap:10px;margin:12px 0}.box{flex:1;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:11px}.box b{display:block;font-size:17px;margin-top:2px}
+.row{display:flex;gap:10px;margin:12px 0}.box{flex:1;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:11px}.box b{display:block;font-size:15px;word-break:break-word;margin-top:2px}
 .acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0}
 button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:13px;font-weight:600;background:var(--ac);color:#fff}
 button.alt{background:var(--ac2);color:var(--ac)}button.ghost{background:none;color:var(--mu);padding:4px 8px;font-weight:500;font-size:13px}
@@ -37,14 +37,21 @@ label{display:block;font-size:12px;color:var(--mu);margin:10px 0 4px}input,selec
 <h2>Where my money went</h2><div id="bars"></div>
 </div>
 
-<div class="v" id="v-bud"><h2 style="margin-top:6px">My budgets</h2><div class="sub">Tap a budget to rename it or set its plan %. Auto-budget splits new money using those %.</div><div id="envs" style="margin-top:10px"></div><button class="alt" style="width:100%" onclick="openS('edit',{k:'e'})">+ New budget</button></div>
+<div class="v" id="v-bud"><h2 style="margin-top:6px">My budgets</h2><div class="sub">Tap a budget and type the amount you plan for it. The app turns your amounts into percentages, and Auto-budget splits new money by them.</div><div id="envs" style="margin-top:10px"></div><button class="alt" style="width:100%" onclick="openS('edit',{k:'e'})">+ New budget</button></div>
 
 <div class="v" id="v-goal"><h2 style="margin-top:6px">Savings goals</h2><div id="goals"></div><button class="alt" style="width:100%" onclick="openS('edit',{k:'g'})">+ New goal</button></div>
+
+<div class="v" id="v-sav"><h2 style="margin-top:6px">Savings</h2>
+<div class="row"><div class="box"><span class="sub">Savings balance</span><b id="sb"></b></div><div class="box"><span class="sub">Owed back (emergency)</span><b id="sd" class="neg"></b></div></div>
+<div class="acts"><button onclick="openS('move',{to:'sav'})">+ Save today</button><button class="alt" onclick="openS('spend',{from:'sav'})">🚨 Emergency spend</button></div>
+<button class="alt" style="width:100%;margin-top:10px" onclick="repay()">Repay savings</button>
+<div class="sub" style="margin-top:8px">Spending from savings counts as a debt to yourself. It stays in “Owed back” until you repay it.</div>
+<h2>Savings history</h2><div id="shist"></div></div>
 
 <div class="v" id="v-hist"><h2 style="margin-top:6px">History</h2><div class="row" style="margin-top:0"><input id="q" placeholder="Search…" oninput="renderH()"><select id="mo" onchange="renderH()" style="max-width:150px"></select></div><div id="hist"></div>
 <div class="foot"><button class="ghost" onclick="setPin()">🔒 PIN</button><button class="ghost" onclick="backup()">⬇ Backup</button><button class="ghost" onclick="restore()">⬆ Restore</button></div></div>
 
-<nav><div><button id="n-home" class="on" onclick="show('home')"><span>🏠</span>Home</button><button id="n-bud" onclick="show('bud')"><span>👛</span>Budgets</button><button id="n-goal" onclick="show('goal')"><span>🎯</span>Goals</button><button id="n-hist" onclick="show('hist')"><span>🕘</span>History</button></div></nav>
+<nav><div><button id="n-home" class="on" onclick="show('home')"><span>🏠</span>Home</button><button id="n-bud" onclick="show('bud')"><span>👛</span>Budgets</button><button id="n-goal" onclick="show('goal')"><span>🎯</span>Goals</button><button id="n-sav" onclick="show('sav')"><span>🐷</span>Savings</button><button id="n-hist" onclick="show('hist')"><span>🕘</span>History</button></div></nav>
 
 <div class="sheet" id="sheet" onclick="if(event.target===this)closeS()"><div class="panel">
 <h2 id="st" style="margin-top:0"></h2>
@@ -60,79 +67,86 @@ label{display:block;font-size:12px;color:var(--mu);margin:10px 0 4px}input,selec
 <script>
 var K="mybudget_v1",S,u=Date.now(),mode,pre={};
 try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
-if(!S||!S.envs)S={envs:[{id:"e1",name:"Food",p:40},{id:"e2",name:"Transport",p:20},{id:"e3",name:"Airtime & Data",p:10},{id:"e4",name:"Personal",p:10},{id:"e5",name:"Other",p:0}],tx:[]};
+if(!S||!S.envs)S={envs:[{id:"e1",name:"Food",a:0},{id:"e2",name:"Transport",a:0},{id:"e3",name:"Airtime & Data",a:0},{id:"e4",name:"Personal",a:0},{id:"e5",name:"Other",a:0}],tx:[]};
+S.envs.forEach(function(e){if(e.a===undefined&&!e.g)e.a=(e.p||0)*1000});
 var $=function(i){return document.getElementById(i)},nid=function(){return u++};
 function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
-function fmt(n){return Math.round(n).toLocaleString("en-US")}
+function fmt(n){return "UGX "+Math.round(n).toLocaleString("en-US")}
 function ids(){return["free","sav"].concat(S.envs.map(function(e){return e.id}))}
 function find(id){return S.envs.filter(function(x){return x.id===id})[0]}
 function name(id){if(id==="free")return"Not yet budgeted";if(id==="sav")return"Savings";var e=find(id);return e?(e.g?"🎯 ":"")+e.name:"(deleted)"}
 function bal(id){var b=0;S.tx.forEach(function(t){if(t.to===id)b+=t.amt;if(t.from===id)b-=t.amt});return b}
 function inM(t,y,m){var d=new Date(t.d);return d.getFullYear()===y&&d.getMonth()===m}
-function show(t){["home","bud","goal","hist"].forEach(function(x){$("v-"+x).classList.toggle("on",x===t);$("n-"+x).classList.toggle("on",x===t)});window.scrollTo(0,0)}
+function show(t){["home","bud","goal","sav","hist"].forEach(function(x){$("v-"+x).classList.toggle("on",x===t);$("n-"+x).classList.toggle("on",x===t)});window.scrollTo(0,0)}
 function render(){
- var n=new Date(),y=n.getFullYear(),m=n.getMonth(),tot=0,I=0,P=0,V=0,by={};
+ var n=new Date(),y=n.getFullYear(),m=n.getMonth(),tot=0,I=0,P=0,V=0,by={},tp=0;S.envs.forEach(function(x){if(!x.g)tp+=x.a||0});
  ids().forEach(function(i){tot+=bal(i)});
  S.tx.forEach(function(t){if(!inM(t,y,m))return;if(t.t==="in")I+=t.amt;else if(t.t==="spend"){P+=t.amt;var k=name(t.from);by[k]=(by[k]||0)+t.amt}else if(t.to==="sav"||(find(t.to)||{}).g)V+=t.amt});
- $("tot").textContent="UGX "+fmt(tot);$("free").textContent=fmt(bal("free"));$("sav").textContent=fmt(bal("sav"));
+ $("tot").textContent=fmt(tot);$("free").textContent=fmt(bal("free"));$("sav").textContent=fmt(bal("sav"));$("sb").textContent=fmt(bal("sav"));$("sd").textContent=fmt(owed());
  $("mt").textContent=n.toLocaleDateString("en-GB",{month:"long",year:"numeric"});$("mi").textContent=fmt(I);$("ms").textContent=fmt(P);$("mv").textContent=fmt(V);
  var ks=Object.keys(by).sort(function(a,b){return by[b]-by[a]}),mx=by[ks[0]]||1;
  $("bars").innerHTML=ks.map(function(k){return '<div class="bl"><span>'+esc(k)+'</span><b>'+fmt(by[k])+'</b></div><div class="bt"><i style="width:'+Math.round(by[k]/mx*100)+'%"></i></div>'}).join("")||'<div class="sub">No spending yet this month.</div>';
  $("envs").innerHTML=S.envs.filter(function(e){return!e.g}).map(function(e){var b=bal(e.id),sp=0;S.tx.forEach(function(t){if(t.t==="spend"&&t.from===e.id&&inM(t,y,m))sp+=t.amt});
-  return '<div class="env" onclick="openS(\'edit\',{eid:\''+e.id+'\'})"><div><div>'+esc(e.name)+'</div><div class="sub">plan '+(e.p||0)+'% · spent '+fmt(sp)+' this month</div></div><b class="'+(b<0?"neg":"")+'">'+fmt(b)+'</b></div>'}).join("")||'<div class="sub">No budgets yet.</div>';
+  return '<div class="env" onclick="openS(\'edit\',{eid:\''+e.id+'\'})"><div><div>'+esc(e.name)+'</div><div class="sub">plan '+fmt(e.a||0)+' ('+(tp?Math.round((e.a||0)/tp*100):0)+'%) · spent '+fmt(sp)+' this month</div></div><b class="'+(b<0?"neg":"")+'">'+fmt(b)+'</b></div>'}).join("")||'<div class="sub">No budgets yet.</div>';
  $("goals").innerHTML=S.envs.filter(function(e){return e.g}).map(function(e){var b=bal(e.id),p=Math.max(0,Math.min(100,Math.round(b/e.g*100)));
   return '<div class="env" style="display:block"><div style="display:flex;justify-content:space-between" onclick="openS(\'edit\',{eid:\''+e.id+'\'})"><span>🎯 '+esc(e.name)+'</span><b>'+p+'%</b></div><div class="pr"><i style="width:'+p+'%"></i></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span class="sub">'+fmt(b)+' of '+fmt(e.g)+'</span><button class="ghost" onclick="openS(\'move\',{to:\''+e.id+'\'})">+ Add money</button></div></div>'}).join("")||'<div class="sub" style="margin-bottom:10px">Save for something big, like a phone or school fees. Add a goal with a target and watch the bar fill.</div>';
  var o='<option value="">All months</option>',seen={};S.tx.slice().reverse().forEach(function(t){var d=new Date(t.d),k=d.getFullYear()+"-"+d.getMonth();if(!seen[k]){seen[k]=1;o+='<option value="'+k+'">'+d.toLocaleDateString("en-GB",{month:"short",year:"numeric"})+'</option>'}});
  var cur=$("mo").value;$("mo").innerHTML=o;$("mo").value=cur;renderH();
+ $("shist").innerHTML=rows(S.tx.slice().reverse().filter(function(t){return t.from==="sav"||t.to==="sav"}))||'<div class="sub">No savings activity yet.</div>';
 }
+function rows(a){var last="",h="";a.forEach(function(t){var dt=new Date(t.d),mk=dt.toLocaleDateString("en-GB",{month:"long",year:"numeric"}),d=dt.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}),l,c="",sg="";
+ if(mk!==last){last=mk;h+='<h2 style="color:var(--ac);border-bottom:2px solid var(--ac2);padding-bottom:4px">'+mk+'</h2>'}
+ if(t.t==="in"){l="Received"+(t.note?" · "+esc(t.note):"");c="pos";sg="+"}
+ else if(t.t==="spend"){l=(t.from==="sav"?"🚨 Emergency spend":"Spent")+(t.note?" · "+esc(t.note):"")+"<small>from "+esc(name(t.from))+"</small>";c="neg";sg="−"}
+ else l=(t.rep?"Repaid savings":t.to==="sav"?"Saved":"Moved")+(t.note?" · "+esc(t.note):"")+"<small>"+esc(name(t.from))+" → "+esc(name(t.to))+"</small>";
+ h+='<div class="tx"><div>'+l+'<small>'+d+'</small></div><div style="text-align:right"><b class="'+c+'">'+sg+fmt(t.amt)+'</b><br><button class="ghost" onclick="del('+t.id+')">undo</button></div></div>'});return h}
+function owed(){var d=0;S.tx.forEach(function(t){if(t.t==="spend"&&t.from==="sav")d+=t.amt;if(t.rep)d-=t.amt});return Math.max(0,d)}
+function repay(){if(!(owed()>0)){alert("You do not owe your savings anything.");return}openS("move",{to:"sav",rep:true})}
 function renderH(){
  var q=$("q").value.toLowerCase(),mo=$("mo").value;
- $("hist").innerHTML=S.tx.slice().reverse().filter(function(t){var d=new Date(t.d);if(mo&&(d.getFullYear()+"-"+d.getMonth())!==mo)return false;var s=((t.note||"")+" "+name(t.from||"")+" "+name(t.to||"")).toLowerCase();return!q||s.indexOf(q)>-1}).map(function(t){
-  var d=new Date(t.d).toLocaleDateString("en-GB",{day:"numeric",month:"short"}),l,c="",sg="";
-  if(t.t==="in"){l="Received"+(t.note?" · "+esc(t.note):"");c="pos";sg="+"}
-  else if(t.t==="spend"){l="Spent"+(t.note?" · "+esc(t.note):"")+"<small>from "+esc(name(t.from))+"</small>";c="neg";sg="−"}
-  else l=(t.to==="sav"?"Saved":"Moved")+(t.note?" · "+esc(t.note):"")+"<small>"+esc(name(t.from))+" → "+esc(name(t.to))+"</small>";
-  return '<div class="tx"><div>'+l+'<small>'+d+'</small></div><div style="text-align:right"><b class="'+c+'">'+sg+fmt(t.amt)+'</b><br><button class="ghost" onclick="del('+t.id+')">undo</button></div></div>'}).join("")||'<div class="sub">Nothing here yet.</div>';
+ $("hist").innerHTML=rows(S.tx.slice().reverse().filter(function(t){var d=new Date(t.d);if(mo&&(d.getFullYear()+"-"+d.getMonth())!==mo)return false;var s=((t.note||"")+" "+name(t.from||"")+" "+name(t.to||"")).toLowerCase();return!q||s.indexOf(q)>-1}))||'<div class="sub">Nothing here yet.</div>';
 }
 function opts(sel,list){sel.innerHTML=list.map(function(i){return '<option value="'+i+'">'+esc(name(i))+' ('+fmt(bal(i))+')</option>'}).join("")}
 function openS(m,p){
- mode=m;pre=p||{};var all=ids(),T={in:"Money received",move:pre.to==="sav"?"Save today":"Budget money",spend:"I spent money",edit:"Budget"};
+ mode=m;pre=p||{};var all=ids(),T={in:"Money received",move:pre.rep?"Repay savings":pre.to==="sav"?"Save today":"Budget money",spend:"I spent money",edit:"Budget"};
  var e=pre.eid?find(pre.eid):null,g=e?!!e.g:pre.k==="g";
  $("st").textContent=m==="edit"?(e?"Edit ":"New ")+(g?"goal":"budget"):T[m];
- $("fFrom").style.display=(m==="move"||m==="spend")?"block":"none";$("fTo").style.display=m==="move"?"block":"none";
+ $("fFrom").style.display=(m==="move"||m==="spend")?"block":"none";$("fTo").style.display=(m==="move"&&!pre.rep)?"block":"none";
  $("fNote").style.display=m==="move"?"none":"block";$("del").style.display=e?"block":"none";
  $("lNote").textContent=m==="in"?"Who sent it? (optional)":m==="spend"?"What did you spend it on?":"Name";
- $("lAmt").textContent=m==="edit"?(g?"Target (UGX)":"Plan % of each new amount (0-100)"):"Amount (UGX)";
+ $("lAmt").textContent=m==="edit"?(g?"Target (UGX)":"Planned amount (UGX)"):"Amount (UGX)";
  if(m==="move"){opts($("from"),all);$("from").value="free";opts($("to"),all);$("to").value=pre.to||"sav"}
- if(m==="spend")opts($("from"),all);
- $("amt").value=e?(g?e.g:(e.p||0)):"";$("note").value=e?e.name:"";$("err").textContent="";
+ if(m==="spend"){opts($("from"),all);if(pre.from)$("from").value=pre.from}
+ if(pre.rep)$("from").value="free";
+ $("amt").value=e?(g?e.g:(e.a||0)):"";$("note").value=e?e.name:"";$("err").textContent="";
  $("sheet").classList.add("on");setTimeout(function(){$("amt").focus()},100);
 }
 function closeS(){$("sheet").classList.remove("on")}
 function submit(){
- var a=Math.round(parseFloat($("amt").value)),er=$("err"),note=$("note").value.trim(),from=$("from").value,to=$("to").value;
+ var a=Math.round(parseFloat($("amt").value)),er=$("err"),note=$("note").value.trim(),from=$("from").value,to=pre.rep?"sav":$("to").value;
  if(mode==="edit"){
   var e=pre.eid?find(pre.eid):null,g=e?!!e.g:pre.k==="g";if(!note){er.textContent="Enter a name.";return}
   if(g&&!(a>0)){er.textContent="Enter a target amount.";return}
-  if(!g){a=a||0;if(a<0||a>100){er.textContent="Plan % must be 0 to 100.";return}
-   var s=a;S.envs.forEach(function(x){if(!x.g&&(!e||x.id!==e.id))s+=x.p||0});if(s>100){er.textContent="Plans add up to "+s+"%. Keep it at 100% or less.";return}}
-  if(e){e.name=note;if(g)e.g=a;else e.p=a}else S.envs.push(g?{id:"e"+nid(),name:note,g:a}:{id:"e"+nid(),name:note,p:a});
+  if(!g){a=a||0;if(a<0){er.textContent="Enter 0 or more.";return}}
+  if(e){e.name=note;if(g)e.g=a;else e.a=a}else S.envs.push(g?{id:"e"+nid(),name:note,g:a}:{id:"e"+nid(),name:note,a:a});
   save();closeS();render();return}
  if(!(a>0)){er.textContent="Enter an amount.";return}
  var t={id:nid(),d:Date.now(),amt:a,note:note};
  if(mode==="in"){t.t="in";t.to="free"}
  else{if(mode==="move"&&from===to){er.textContent="Pick two different places.";return}
   if(a>bal(from)){er.textContent="Not enough in "+name(from)+" (only "+fmt(bal(from))+").";return}
-  t.from=from;if(mode==="spend")t.t="spend";else{t.t="move";t.to=to}}
+  if(pre.rep&&a>owed()){er.textContent="You only owe "+fmt(owed())+".";return}
+  t.from=from;if(mode==="spend")t.t="spend";else{t.t="move";t.to=to;if(pre.rep)t.rep=true}}
  S.tx.push(t);save();closeS();render();
 }
 function delEnv(){var e=find(pre.eid);if(!e)return;if(Math.round(bal(e.id))!==0){$("err").textContent="Move the money out first (balance is "+fmt(bal(e.id))+").";return}
  if(confirm("Delete "+e.name+"?")){S.envs=S.envs.filter(function(x){return x.id!==e.id});save();closeS();render()}}
-function auto(){var f=bal("free"),L=S.envs.filter(function(e){return!e.g&&e.p>0});
- if(f<=0||!L.length){alert("Add money first, and set a plan % on your budgets (Budgets tab).");return}
- if(!confirm("Split "+fmt(f)+" like this?\n\n"+L.map(function(e){return e.name+": "+fmt(Math.floor(f*e.p/100))}).join("\n")))return;
- L.forEach(function(e){var a=Math.floor(f*e.p/100);if(a>0)S.tx.push({id:nid(),d:Date.now(),t:"move",from:"free",to:e.id,amt:a,note:"auto"})});save();render()}
+function auto(){var f=bal("free"),L=S.envs.filter(function(e){return!e.g&&e.a>0}),tp=0;L.forEach(function(e){tp+=e.a});
+ if(f<=0||!L.length){alert("Add money first, and set a planned amount on your budgets (Budgets tab).");return}
+ var sh=L.map(function(e){return{e:e,a:Math.floor(f*e.a/tp)}});
+ if(!confirm("Split "+fmt(f)+" like this?\n\n"+sh.map(function(x){return x.e.name+" ("+Math.round(x.e.a/tp*100)+"%): "+fmt(x.a)}).join("\n")))return;
+ sh.forEach(function(x){if(x.a>0)S.tx.push({id:nid(),d:Date.now(),t:"move",from:"free",to:x.e.id,amt:x.a,note:"auto"})});save();render()}
 function del(id){if(confirm("Undo this entry?")){S.tx=S.tx.filter(function(t){return t.id!==id});save();render()}}
 function hp(p){var h=5381;p="bud"+p;for(var i=0;i<p.length;i++)h=((h<<5)+h+p.charCodeAt(i))|0;return String(h)}
 function unlock(){if(hp($("pin").value)===S.pin){$("lock").classList.remove("on");$("pin").value="";$("lerr").textContent=""}else $("lerr").textContent="Wrong PIN."}
